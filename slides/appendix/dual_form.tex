@@ -1,0 +1,136 @@
+%!TEX TS-program = xelatex
+\documentclass[12pt,a4paper]{article}
+
+% ---- Tiếng Việt và font chữ (XeLaTeX) ----
+
+% ---- Toán học và ký hiệu ----
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{bm}
+\usepackage{mathtools}
+
+% ---- Định lý, bổ đề, nhận xét ----
+\newtheorem{theorem}{Định lý}[section]
+\newtheorem{lemma}[theorem]{Bổ đề}
+\theoremstyle{definition}
+\newtheorem{definition}{Định nghĩa}[section]
+\theoremstyle{remark}
+\newtheorem*{remark}{Nhận xét}
+
+% ---- Hình vẽ (nếu cần) ----
+\usepackage{tikz}
+
+% ---- Liên kết và layout ----
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% ---- Thông tin tài liệu ----
+\title{\bfseries Chứng minh bài toán đối ngẫu của SVM \\ và vai trò của tích vô hướng}
+\author{Long Nguyen Hoang}
+\date{ }
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Tài liệu này trình bày chứng minh chi tiết cho bài toán đối ngẫu của \textbf{Support Vector Machines} (SVMs) với lề cứng, trong không gian đặc trưng được ánh xạ qua $\phi$. Mục tiêu là chỉ ra rằng cả quá trình huấn luyện lẫn dự đoán đều chỉ phụ thuộc vào tích vô hướng $\phi(\mathbf{x}_i)^T \phi(\mathbf{x}_j)$, tạo cơ sở cho \textbf{Kernel Trick} nhằm tính toán hiệu quả trong không gian đặc trưng số chiều cao.
+\end{abstract}
+
+\tableofcontents
+\newpage
+\section{Bài toán gốc}
+
+Xét tập huấn luyện $\{(\mathbf{x}_i, y_i)\}_{i=1}^n$ với $\mathbf{x}_i \in \mathbb{R}^d$, $y_i \in \{-1, +1\}$. SVM tìm siêu phẳng có lề cực đại bằng cách giải bài toán tối ưu lồi sau (Hard‑Margin):
+
+\begin{equation}\label{eq:primal}
+\begin{aligned}
+\min_{\mathbf{w}, b} \quad & \frac{1}{2}\|\mathbf{w}\|^2 \\
+\text{s.t.} \quad & y_i(\mathbf{w}^T \mathbf{x}_i + b) \ge 1, \quad i = 1,\dots, n.
+\end{aligned}
+\end{equation}
+
+Khi làm việc với không gian đặc trưng ánh xạ $\phi: \mathbb{R}^d \to \mathbb{R}^D$, ta thay $\mathbf{x}_i$ bởi $\phi(\mathbf{x}_i)$:
+
+\begin{equation}\label{eq:primal_phi}
+\begin{aligned}
+\min_{\mathbf{w}, b} \quad & \frac{1}{2}\|\mathbf{w}\|^2 \\
+\text{s.t.} \quad & y_i(\mathbf{w}^T \phi(\mathbf{x}_i) + b) \ge 1, \quad i = 1,\dots, n.
+\end{aligned}
+\end{equation}
+
+\section{Phương pháp nhân tử Lagrange và điều kiện KKT}
+
+Để loại bỏ ràng buộc, ta xây dựng hàm Lagrange với các nhân tử $\alpha_i \ge 0$:
+
+\begin{equation}\label{eq:lagrangian}
+\mathcal{L}(\mathbf{w}, b, \bm{\alpha}) = \frac{1}{2}\|\mathbf{w}\|^2 - \sum_{i=1}^n \alpha_i \left[ y_i(\mathbf{w}^T \phi(\mathbf{x}_i) + b) - 1 \right].
+\end{equation}
+
+Tại nghiệm tối ưu, đạo hàm riêng của $\mathcal{L}$ theo $\mathbf{w}$ và $b$ phải bằng $0$:
+
+\begin{align}
+\frac{\partial \mathcal{L}}{\partial \mathbf{w}} &= \mathbf{w} - \sum_{i=1}^n \alpha_i y_i \phi(\mathbf{x}_i) = 0 
+\quad \Rightarrow \quad \mathbf{w} = \sum_{i=1}^n \alpha_i y_i \phi(\mathbf{x}_i), \label{eq:stationarity_w} \\
+\frac{\partial \mathcal{L}}{\partial b} &= -\sum_{i=1}^n \alpha_i y_i = 0 
+\quad \Rightarrow \quad \sum_{i=1}^n \alpha_i y_i = 0. \label{eq:stationarity_b}
+\end{align}
+
+Ngoài ra, điều kiện bù (complementary slackness) đòi hỏi:
+
+\begin{equation}\label{eq:slackness}
+\alpha_i \left[ y_i(\mathbf{w}^T \phi(\mathbf{x}_i) + b) - 1 \right] = 0, \quad \forall i.
+\end{equation}
+
+\section{Thay thế vào hàm Lagrange}
+
+Thay $\mathbf{w}$ từ \eqref{eq:stationarity_w} vào $\mathcal{L}$ và sử dụng \eqref{eq:stationarity_b}:
+
+\begin{align}
+\mathcal{L} &= \frac{1}{2} \left( \sum_{i} \alpha_i y_i \phi(\mathbf{x}_i) \right)^T \left( \sum_{j} \alpha_j y_j \phi(\mathbf{x}_j) \right) 
+- \sum_{i} \alpha_i y_i \left( \sum_{j} \alpha_j y_j \phi(\mathbf{x}_j) \right)^T \phi(\mathbf{x}_i) - b \underbrace{\sum_i \alpha_i y_i}_{=0} + \sum_i \alpha_i \nonumber \\
+&= \frac{1}{2} \sum_{i,j} \alpha_i \alpha_j y_i y_j \phi(\mathbf{x}_i)^T \phi(\mathbf{x}_j) 
+- \sum_{i,j} \alpha_i \alpha_j y_i y_j \phi(\mathbf{x}_i)^T \phi(\mathbf{x}_j) + \sum_i \alpha_i \nonumber \\
+&= \sum_{i=1}^n \alpha_i - \frac{1}{2} \sum_{i=1}^n \sum_{j=1}^n \alpha_i \alpha_j y_i y_j \phi(\mathbf{x}_i)^T \phi(\mathbf{x}_j).
+\end{align}
+
+\section{Bài toán đối ngẫu}
+
+Hàm mục tiêu đối ngẫu chỉ còn phụ thuộc vào $\bm{\alpha}$ và các tích vô hướng $\phi(\mathbf{x}_i)^T \phi(\mathbf{x}_j)$. Bài toán đối ngẫu cần cực đại hóa:
+
+\begin{equation}\label{eq:dual}
+\boxed{
+\begin{aligned}
+\max_{\bm{\alpha}} \quad & \sum_{i=1}^n \alpha_i - \frac{1}{2} \sum_{i=1}^n \sum_{j=1}^n \alpha_i \alpha_j y_i y_j \phi(\mathbf{x}_i)^T \phi(\mathbf{x}_j) \\
+\text{s.t.} \quad & \alpha_i \ge 0, \quad \forall i, \\
+& \sum_{i=1}^n \alpha_i y_i = 0.
+\end{aligned}
+}
+\end{equation}
+
+\section{Hàm quyết định và dự đoán}
+
+Sau khi giải bài toán đối ngẫu, ta thu được các $\alpha_i^*$. Vector trọng số $\mathbf{w}$ được khôi phục từ \eqref{eq:stationarity_w} và $b$ được tính thông qua các điều kiện KKT. Với điểm mới $\mathbf{x}$, giá trị quyết định là:
+
+\begin{equation}\label{eq:decision}
+f(\mathbf{x}) = \mathbf{w}^T \phi(\mathbf{x}) + b = \left( \sum_{i=1}^n \alpha_i y_i \phi(\mathbf{x}_i) \right)^T \phi(\mathbf{x}) + b = \sum_{i=1}^n \alpha_i y_i \phi(\mathbf{x}_i)^T \phi(\mathbf{x}) + b.
+\end{equation}
+
+\section{Nhận xét quan trọng – Cơ sở của Kernel Trick}
+
+\begin{remark}
+Cả trong huấn luyện (hàm mục tiêu \eqref{eq:dual}) lẫn khi dự đoán (hàm quyết định \eqref{eq:decision}), ta \textbf{không cần biết tường minh vector $\phi(\mathbf{x})$ hay $\mathbf{w}$}. Mọi tính toán đều quy về \textbf{tích vô hướng} $\phi(\mathbf{x}_i)^T \phi(\mathbf{x}_j)$.
+\end{remark}
+
+Nhờ đó, nếu tồn tại một hàm $K(\mathbf{x}_i, \mathbf{x}_j)$ có thể tính trực tiếp giá trị của tích vô hướng trong không gian đặc trưng mà không cần ánh xạ $\phi$ một cách tường minh, ta có thể làm việc với không gian đặc trưng số chiều cao (thậm chí vô hạn) với chi phí tính toán thấp. Đây chính là ý tưởng cốt lõi của \textbf{Kernel Trick}.
+
+\section*{Kết luận}
+Tài liệu đã trình bày chi tiết việc chuyển từ bài toán gốc của SVM sang bài toán đối ngẫu, qua đó chỉ ra sự phụ thuộc duy nhất vào tích vô hướng $\phi(\mathbf{x}_i)^T \phi(\mathbf{x}_j)$. Đây là nền tảng toán học cho phép sử dụng các hàm kernel, mở rộng SVM xử lý dữ liệu phi tuyến một cách hiệu quả.
+
+\end{document}

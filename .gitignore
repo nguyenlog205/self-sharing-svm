@@ -1,6 +1,15 @@
-slides/
-!slides/main.pdf
-!slides/src/
-!slides/main.tex
-!slides/appendix/dual_form.pdf
-!slides/appendix/dual_form.tex
+# Không ignore slides/
+# Chỉ ignore file tạm, log, v.v.
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.vrb
+*.nav
+*.snm
+
+
+# Nếu muốn ignore tất cả PDF nhưng vẫn giữ PDF trong slides:
+*.pdf
+!slides/**/*.pdf
